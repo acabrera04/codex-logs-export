@@ -140,7 +140,7 @@ function renderTranscriptByTurn(
       "_Entries recorded before the first user prompt in the selected transcript._",
     );
     lines.push("");
-    prelude.forEach((entry) => renderEntry(lines, entry, metadata));
+    renderEntries(lines, prelude, metadata);
   }
 
   turns.forEach((turnEntries, index) => {
@@ -172,8 +172,41 @@ function renderTranscriptByTurn(
       return;
     }
 
-    rest.forEach((entry) => renderEntry(lines, entry, metadata));
+    renderEntries(lines, rest, metadata);
   });
+}
+
+function renderEntries(
+  lines: string[],
+  entries: TranscriptEntry[],
+  metadata: ParsedTranscript["metadata"],
+): void {
+  const consumedOutputIndexes = new Set<number>();
+
+  for (let index = 0; index < entries.length; index += 1) {
+    const entry = entries[index];
+    if (consumedOutputIndexes.has(index)) {
+      continue;
+    }
+
+    if (entry.kind === "tool_call") {
+      const outputMatchIndex = findMatchingToolOutputIndex(entries, index + 1, entry.callId);
+      if (outputMatchIndex !== -1) {
+        renderToolInteraction(
+          lines,
+          entry,
+          entries[outputMatchIndex] as Extract<TranscriptEntry, { kind: "tool_output" }>,
+        );
+        consumedOutputIndexes.add(outputMatchIndex);
+      } else {
+        renderEntry(lines, entry, metadata);
+      }
+
+      continue;
+    }
+
+    renderEntry(lines, entry, metadata);
+  }
 }
 
 function renderEntry(
@@ -194,20 +227,7 @@ function renderEntry(
   }
 
   if (entry.kind === "tool_call") {
-    lines.push(`#### Tool Call: ${entry.toolName}`);
-    lines.push("");
-    if (entry.timestamp) {
-      lines.push(`- Time: ${entry.timestamp}`);
-    }
-    if (entry.callId) {
-      lines.push(`- Call ID: ${entry.callId}`);
-    }
-    if (entry.timestamp || entry.callId) {
-      lines.push("");
-    }
-
-    renderToolCallArguments(lines, entry.toolName, entry.argumentsText);
-    lines.push("");
+    renderToolInteraction(lines, entry);
     return;
   }
 
@@ -225,6 +245,56 @@ function renderEntry(
   lines.push("```text");
   lines.push(entry.outputText.trimEnd());
   lines.push("```");
+  lines.push("");
+}
+
+function findMatchingToolOutputIndex(
+  entries: TranscriptEntry[],
+  startIndex: number,
+  callId: string | undefined,
+): number {
+  if (!callId) {
+    return -1;
+  }
+
+  for (let index = startIndex; index < entries.length; index += 1) {
+    const entry = entries[index];
+    if (entry.kind === "tool_output" && entry.callId === callId) {
+      return index;
+    }
+  }
+
+  return -1;
+}
+
+function renderToolInteraction(
+  lines: string[],
+  call: Extract<TranscriptEntry, { kind: "tool_call" }>,
+  output?: Extract<TranscriptEntry, { kind: "tool_output" }>,
+): void {
+  lines.push(`#### Tool: ${call.toolName}`);
+  lines.push("");
+  if (call.timestamp) {
+    lines.push(`- Time: ${call.timestamp}`);
+  }
+  if (call.callId) {
+    lines.push(`- Call ID: ${call.callId}`);
+  }
+  if (call.timestamp || call.callId) {
+    lines.push("");
+  }
+
+  renderToolCallArguments(lines, call.toolName, call.argumentsText);
+
+  if (output) {
+    lines.push("");
+    lines.push("Output:");
+    lines.push("");
+    lines.push("```text");
+    lines.push(output.outputText.trimEnd());
+    lines.push("```");
+  }
+
   lines.push("");
 }
 

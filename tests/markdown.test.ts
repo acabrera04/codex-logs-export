@@ -41,6 +41,12 @@ describe("markdown renderer", () => {
             '{"cmd":"pwd","workdir":"/tmp/project","yield_time_ms":1000}',
           callId: "call_1",
         },
+        {
+          kind: "tool_output",
+          timestamp: "2026-03-30T16:00:04.000Z",
+          callId: "call_1",
+          outputText: "Command: pwd\nOutput:\n/tmp/project",
+        },
       ],
     };
 
@@ -52,11 +58,13 @@ describe("markdown renderer", () => {
     expect(markdown).toContain("### Turn 1: hello");
     expect(markdown).toContain("#### 👤 User Prompt");
     expect(markdown).toContain("#### 🤖 gpt-5.4 (high)");
-    expect(markdown).toContain("#### Tool Call: exec_command");
+    expect(markdown).toContain("#### Tool: exec_command");
     expect(markdown).toContain("- Command:");
     expect(markdown).toContain("```sh");
     expect(markdown).toContain("pwd");
     expect(markdown).toContain("- Working Directory: /tmp/project");
+    expect(markdown).toContain("Output:");
+    expect(markdown).toContain("/tmp/project");
   });
 
   it("sanitizes deterministic filenames", () => {
