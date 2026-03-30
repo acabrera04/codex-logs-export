@@ -49,8 +49,8 @@ describe("markdown renderer", () => {
     expect(markdown).toContain("- Thread ID: thread-12345678");
     expect(markdown).toContain("- Reasoning Effort: high");
     expect(markdown).toContain("### Turn 1: hello");
-    expect(markdown).toContain("#### User Prompt");
-    expect(markdown).toContain("#### Assistant");
+    expect(markdown).toContain("#### 👤 User Prompt");
+    expect(markdown).toContain("#### 🤖 gpt-5.4 (high)");
     expect(markdown).toContain("#### Tool Call: exec_command");
     expect(markdown).toContain("```json");
   });

@@ -28,7 +28,8 @@ describe("cli", () => {
 
     expect(output).toContain("# Codex Conversation Export");
     expect(output).toContain("### Turn 1: Export this");
-    expect(output).toContain("#### User Prompt");
+    expect(output).toContain("#### 👤 User Prompt");
+    expect(output).toContain("#### 🤖 gpt-5.4");
     expect(output).not.toContain("Tool Call");
   });
 

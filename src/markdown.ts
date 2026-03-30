@@ -2,6 +2,8 @@ import path from "node:path";
 
 import type { ParsedTranscript, TranscriptEntry } from "./types.js";
 
+type MessageRole = Extract<TranscriptEntry, { kind: "message" }>["role"];
+
 export function renderMarkdown(transcript: ParsedTranscript): string {
   const lines: string[] = [];
   const metadata = transcript.metadata;
@@ -36,7 +38,7 @@ export function renderMarkdown(transcript: ParsedTranscript): string {
 
   lines.push("## Transcript");
   lines.push("");
-  renderTranscriptByTurn(lines, transcript.entries);
+  renderTranscriptByTurn(lines, transcript);
 
   return lines.join("\n");
 }
@@ -110,8 +112,9 @@ export function sanitizeForFilename(value: string): string {
 
 function renderTranscriptByTurn(
   lines: string[],
-  entries: TranscriptEntry[],
+  transcript: ParsedTranscript,
 ): void {
+  const { entries, metadata } = transcript;
   const prelude: TranscriptEntry[] = [];
   const turns: TranscriptEntry[][] = [];
   let currentTurn: TranscriptEntry[] | null = null;
@@ -137,7 +140,7 @@ function renderTranscriptByTurn(
       "_Entries recorded before the first user prompt in the selected transcript._",
     );
     lines.push("");
-    prelude.forEach((entry) => renderEntry(lines, entry));
+    prelude.forEach((entry) => renderEntry(lines, entry, metadata));
   }
 
   turns.forEach((turnEntries, index) => {
@@ -151,7 +154,7 @@ function renderTranscriptByTurn(
     lines.push("");
 
     if (prompt && prompt.kind === "message") {
-      lines.push("#### User Prompt");
+      lines.push("#### 👤 User Prompt");
       lines.push("");
       if (prompt.timestamp) {
         lines.push(`- Time: ${prompt.timestamp}`);
@@ -169,13 +172,17 @@ function renderTranscriptByTurn(
       return;
     }
 
-    rest.forEach((entry) => renderEntry(lines, entry));
+    rest.forEach((entry) => renderEntry(lines, entry, metadata));
   });
 }
 
-function renderEntry(lines: string[], entry: TranscriptEntry): void {
+function renderEntry(
+  lines: string[],
+  entry: TranscriptEntry,
+  metadata: ParsedTranscript["metadata"],
+): void {
   if (entry.kind === "message") {
-    lines.push(`#### ${titleCase(entry.role)}`);
+    lines.push(`#### ${messageHeading(entry.role, metadata)}`);
     lines.push("");
     if (entry.timestamp) {
       lines.push(`- Time: ${entry.timestamp}`);
@@ -235,4 +242,23 @@ function buildTurnTitle(turnNumber: number, promptText: string): string {
   }
 
   return `Turn ${turnNumber}: ${excerpt}`;
+}
+
+function messageHeading(
+  role: MessageRole,
+  metadata: ParsedTranscript["metadata"],
+): string {
+  if (role === "user") {
+    return "👤 User";
+  }
+
+  if (role === "assistant") {
+    const model = metadata.model ?? "Assistant";
+    const reasoning = metadata.reasoningEffort
+      ? ` (${metadata.reasoningEffort})`
+      : "";
+    return `🤖 ${model}${reasoning}`;
+  }
+
+  return titleCase(role);
 }
