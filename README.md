@@ -68,6 +68,7 @@ Export by thread id:
 codex-export export <thread-id>
 codex-export export <thread-id> --out ~/Desktop
 codex-export export <thread-id> --messages-only
+codex-export export <thread-id> --all
 codex-export export <thread-id> --include-hidden-prompts
 codex-export export <thread-id> --stdout
 ```
@@ -86,6 +87,7 @@ The legacy alias `codex-log-export` points to the same CLI.
 - `--out <file-or-dir>` writes to a specific file or directory
 - `--stdout` prints Markdown instead of writing a file
 - `--messages-only` omits tool calls and tool outputs
+- `--all` includes low-level tool metadata such as call IDs and transport details
 - `--include-hidden-prompts` includes hidden system/developer prompt layers
 - `--since <date>` filters `list` results
 - `--limit <n>` caps `list` results
@@ -96,7 +98,9 @@ Each export produces a Markdown file with:
 
 - A metadata section
 - Stable chronological transcript sections
-- Fenced code blocks for tool call arguments and tool outputs
+- Sanitized fenced blocks for tool content so embedded Markdown does not style the transcript
+- Default tool sections focus on the command and cleaned output
+- `--all` restores full tool metadata and raw output wrappers
 
 Default filenames are deterministic:
 

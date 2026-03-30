@@ -33,6 +33,27 @@ describe("cli", () => {
     expect(output).not.toContain("Tool Call");
   });
 
+  it("shows verbose tool metadata only with all=true", () => {
+    const normalOutput = runCli([
+      "export",
+      "--path",
+      path.resolve("tests/fixtures/sample-rollout.jsonl"),
+      "--stdout",
+    ]);
+    const verboseOutput = runCli([
+      "export",
+      "--path",
+      path.resolve("tests/fixtures/sample-rollout.jsonl"),
+      "--all",
+      "--stdout",
+    ]);
+
+    expect(normalOutput).not.toContain("- Call ID: call_1");
+    expect(normalOutput).not.toContain("Command: pwd");
+    expect(verboseOutput).toContain("- Call ID: call_1");
+    expect(verboseOutput).toContain("Command: pwd");
+  });
+
   it("lists recent threads and exports by thread id", () => {
     const { dbPath, rolloutPath, outputDir } = createCliFixture();
     const env = {

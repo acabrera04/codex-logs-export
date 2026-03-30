@@ -1,10 +1,17 @@
 import path from "node:path";
 
-import type { ParsedTranscript, TranscriptEntry } from "./types.js";
+import type {
+  ExportOptions,
+  ParsedTranscript,
+  TranscriptEntry,
+} from "./types.js";
 
 type MessageRole = Extract<TranscriptEntry, { kind: "message" }>["role"];
 
-export function renderMarkdown(transcript: ParsedTranscript): string {
+export function renderMarkdown(
+  transcript: ParsedTranscript,
+  options: ExportOptions = {},
+): string {
   const lines: string[] = [];
   const metadata = transcript.metadata;
 
@@ -38,7 +45,7 @@ export function renderMarkdown(transcript: ParsedTranscript): string {
 
   lines.push("## Transcript");
   lines.push("");
-  renderTranscriptByTurn(lines, transcript);
+  renderTranscriptByTurn(lines, transcript, options);
 
   return lines.join("\n");
 }
@@ -113,6 +120,7 @@ export function sanitizeForFilename(value: string): string {
 function renderTranscriptByTurn(
   lines: string[],
   transcript: ParsedTranscript,
+  options: ExportOptions,
 ): void {
   const { entries, metadata } = transcript;
   const prelude: TranscriptEntry[] = [];
@@ -140,7 +148,7 @@ function renderTranscriptByTurn(
       "_Entries recorded before the first user prompt in the selected transcript._",
     );
     lines.push("");
-    renderEntries(lines, prelude, metadata);
+    renderEntries(lines, prelude, metadata, options);
   }
 
   turns.forEach((turnEntries, index) => {
@@ -160,9 +168,7 @@ function renderTranscriptByTurn(
         lines.push(`- Time: ${prompt.timestamp}`);
         lines.push("");
       }
-      lines.push("```text");
-      lines.push(prompt.text.trimEnd());
-      lines.push("```");
+      appendFencedBlock(lines, "text", prompt.text.trimEnd());
       lines.push("");
     }
 
@@ -172,7 +178,7 @@ function renderTranscriptByTurn(
       return;
     }
 
-    renderEntries(lines, rest, metadata);
+    renderEntries(lines, rest, metadata, options);
   });
 }
 
@@ -180,6 +186,7 @@ function renderEntries(
   lines: string[],
   entries: TranscriptEntry[],
   metadata: ParsedTranscript["metadata"],
+  options: ExportOptions,
 ): void {
   const consumedOutputIndexes = new Set<number>();
 
@@ -190,22 +197,30 @@ function renderEntries(
     }
 
     if (entry.kind === "tool_call") {
-      const outputMatchIndex = findMatchingToolOutputIndex(entries, index + 1, entry.callId);
+      const outputMatchIndex = findMatchingToolOutputIndex(
+        entries,
+        index + 1,
+        entry.callId,
+      );
       if (outputMatchIndex !== -1) {
         renderToolInteraction(
           lines,
           entry,
-          entries[outputMatchIndex] as Extract<TranscriptEntry, { kind: "tool_output" }>,
+          entries[outputMatchIndex] as Extract<
+            TranscriptEntry,
+            { kind: "tool_output" }
+          >,
+          options,
         );
         consumedOutputIndexes.add(outputMatchIndex);
       } else {
-        renderEntry(lines, entry, metadata);
+        renderEntry(lines, entry, metadata, options);
       }
 
       continue;
     }
 
-    renderEntry(lines, entry, metadata);
+    renderEntry(lines, entry, metadata, options);
   }
 }
 
@@ -213,6 +228,7 @@ function renderEntry(
   lines: string[],
   entry: TranscriptEntry,
   metadata: ParsedTranscript["metadata"],
+  options: ExportOptions,
 ): void {
   if (entry.kind === "message") {
     lines.push(`#### ${messageHeading(entry.role, metadata)}`);
@@ -227,24 +243,22 @@ function renderEntry(
   }
 
   if (entry.kind === "tool_call") {
-    renderToolInteraction(lines, entry);
+    renderToolInteraction(lines, entry, undefined, options);
     return;
   }
 
   lines.push("#### Tool Output");
   lines.push("");
-  if (entry.timestamp) {
+  if (options.all && entry.timestamp) {
     lines.push(`- Time: ${entry.timestamp}`);
   }
-  if (entry.callId) {
+  if (options.all && entry.callId) {
     lines.push(`- Call ID: ${entry.callId}`);
   }
-  if (entry.timestamp || entry.callId) {
+  if ((options.all && entry.timestamp) || (options.all && entry.callId)) {
     lines.push("");
   }
-  lines.push("```text");
-  lines.push(entry.outputText.trimEnd());
-  lines.push("```");
+  appendFencedBlock(lines, "text", sanitizeToolOutput(entry.outputText));
   lines.push("");
 }
 
@@ -271,28 +285,31 @@ function renderToolInteraction(
   lines: string[],
   call: Extract<TranscriptEntry, { kind: "tool_call" }>,
   output?: Extract<TranscriptEntry, { kind: "tool_output" }>,
+  options: ExportOptions = {},
 ): void {
   lines.push(`#### Tool: ${call.toolName}`);
   lines.push("");
-  if (call.timestamp) {
+  if (options.all && call.timestamp) {
     lines.push(`- Time: ${call.timestamp}`);
   }
-  if (call.callId) {
+  if (options.all && call.callId) {
     lines.push(`- Call ID: ${call.callId}`);
   }
-  if (call.timestamp || call.callId) {
+  if ((options.all && call.timestamp) || (options.all && call.callId)) {
     lines.push("");
   }
 
-  renderToolCallArguments(lines, call.toolName, call.argumentsText);
+  renderToolCallArguments(lines, call.toolName, call.argumentsText, options);
 
   if (output) {
     lines.push("");
     lines.push("Output:");
     lines.push("");
-    lines.push("```text");
-    lines.push(output.outputText.trimEnd());
-    lines.push("```");
+    appendFencedBlock(
+      lines,
+      "text",
+      sanitizeToolOutput(output.outputText, call.toolName, options),
+    );
   }
 
   lines.push("");
@@ -336,28 +353,26 @@ function renderToolCallArguments(
   lines: string[],
   toolName: string,
   argumentsText: string,
+  options: ExportOptions = {},
 ): void {
   const parsedArgs = tryParseJsonObject(argumentsText);
   if (!parsedArgs) {
-    lines.push("```json");
-    lines.push(argumentsText.trim() || "{}");
-    lines.push("```");
+    appendFencedBlock(lines, "json", argumentsText.trim() || "{}");
     return;
   }
 
   if (toolName === "exec_command") {
-    renderExecCommandArguments(lines, parsedArgs);
+    renderExecCommandArguments(lines, parsedArgs, options);
     return;
   }
 
-  lines.push("```json");
-  lines.push(JSON.stringify(parsedArgs, null, 2));
-  lines.push("```");
+  appendFencedBlock(lines, "json", JSON.stringify(parsedArgs, null, 2));
 }
 
 function renderExecCommandArguments(
   lines: string[],
   args: Record<string, unknown>,
+  options: ExportOptions = {},
 ): void {
   const cmd = typeof args.cmd === "string" ? args.cmd : undefined;
   const workdir = typeof args.workdir === "string" ? args.workdir : undefined;
@@ -377,17 +392,17 @@ function renderExecCommandArguments(
   if (cmd) {
     lines.push("- Command:");
     lines.push("");
-    lines.push("```sh");
-    lines.push(cmd);
-    lines.push("```");
+    appendFencedBlock(lines, "sh", cmd);
   }
 
-  pushOptionalBullet(lines, "Working Directory", workdir);
-  pushOptionalBullet(lines, "Yield Time (ms)", yieldTimeMs);
-  pushOptionalBullet(lines, "Max Output Tokens", maxOutputTokens);
-  pushOptionalBullet(lines, "Shell", shell);
-  pushOptionalBullet(lines, "TTY", tty);
-  pushOptionalBullet(lines, "Login Shell", login);
+  if (options.all) {
+    pushOptionalBullet(lines, "Working Directory", workdir);
+    pushOptionalBullet(lines, "Yield Time (ms)", yieldTimeMs);
+    pushOptionalBullet(lines, "Max Output Tokens", maxOutputTokens);
+    pushOptionalBullet(lines, "Shell", shell);
+    pushOptionalBullet(lines, "TTY", tty);
+    pushOptionalBullet(lines, "Login Shell", login);
+  }
 
   const remaining = { ...args };
   delete remaining.cmd;
@@ -398,13 +413,11 @@ function renderExecCommandArguments(
   delete remaining.tty;
   delete remaining.login;
 
-  if (Object.keys(remaining).length > 0) {
+  if (options.all && Object.keys(remaining).length > 0) {
     lines.push("");
     lines.push("Raw arguments:");
     lines.push("");
-    lines.push("```json");
-    lines.push(JSON.stringify(remaining, null, 2));
-    lines.push("```");
+    appendFencedBlock(lines, "json", JSON.stringify(remaining, null, 2));
   }
 }
 
@@ -431,4 +444,67 @@ function pushOptionalBullet(
   }
 
   lines.push(`- ${label}: ${value}`);
+}
+
+function sanitizeToolOutput(
+  outputText: string,
+  toolName?: string,
+  options: ExportOptions = {},
+): string {
+  if (options.all) {
+    return outputText.trimEnd();
+  }
+
+  if (toolName === "exec_command") {
+    return stripExecCommandPreamble(outputText);
+  }
+
+  return outputText.trimEnd();
+}
+
+function stripExecCommandPreamble(outputText: string): string {
+  const lines = outputText.split("\n");
+  const outputMarkerIndex = lines.findIndex(
+    (line) => line.trim() === "Output:",
+  );
+  if (outputMarkerIndex !== -1) {
+    return lines
+      .slice(outputMarkerIndex + 1)
+      .join("\n")
+      .trimEnd();
+  }
+
+  return lines
+    .filter((line) => {
+      const trimmed = line.trim();
+      return !(
+        trimmed.startsWith("Command: ") ||
+        trimmed.startsWith("Chunk ID: ") ||
+        trimmed.startsWith("Wall time: ") ||
+        trimmed.startsWith("Process exited with code ") ||
+        trimmed.startsWith("Original token count: ")
+      );
+    })
+    .join("\n")
+    .trimEnd();
+}
+
+function appendFencedBlock(
+  lines: string[],
+  language: string,
+  content: string,
+): void {
+  const fence = fenceForContent(content);
+  lines.push(`${fence}${language}`);
+  lines.push(content);
+  lines.push(fence);
+}
+
+function fenceForContent(content: string): string {
+  const matches = content.match(/`+/g) ?? [];
+  const longestRun = matches.reduce(
+    (max, match) => Math.max(max, match.length),
+    0,
+  );
+  return "`".repeat(Math.max(3, longestRun + 1));
 }

@@ -32,6 +32,7 @@ Export by thread id:
 codex-export export <thread-id>
 codex-export export <thread-id> --out ~/Desktop
 codex-export export <thread-id> --messages-only
+codex-export export <thread-id> --all
 codex-export export <thread-id> --include-hidden-prompts
 codex-export export <thread-id> --stdout
 ```
@@ -48,6 +49,7 @@ codex-export export --path ~/.codex/sessions/.../rollout-*.jsonl --out ~/Desktop
 - `--out <file-or-dir>` writes to a specific file or directory.
 - `--stdout` prints the Markdown instead of writing a file.
 - `--messages-only` omits tool calls and tool outputs.
+- `--all` includes low-level tool metadata and raw wrappers that are hidden by default.
 - `--include-hidden-prompts` includes developer/system prompt layers.
 - `--since <date>` filters `list` results.
 - `--limit <n>` caps `list` results.

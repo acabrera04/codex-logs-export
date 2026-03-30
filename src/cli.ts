@@ -40,6 +40,7 @@ program
   .option("--stdout", "print markdown to stdout instead of writing a file")
   .option("--include-hidden-prompts", "include system and developer prompts")
   .option("--messages-only", "omit tool calls and tool outputs")
+  .option("--all", "include all available detail in tool sections")
   .action(async (threadId, options) => {
     const rolloutPath = await resolveRolloutPath(threadId, options.path);
     const transcript = await parseRolloutFile(rolloutPath, {
@@ -69,7 +70,9 @@ program
       }
     }
 
-    const markdown = renderMarkdown(transcript);
+    const markdown = renderMarkdown(transcript, {
+      all: Boolean(options.all),
+    });
     if (options.stdout) {
       process.stdout.write(markdown);
       if (!markdown.endsWith("\n")) {

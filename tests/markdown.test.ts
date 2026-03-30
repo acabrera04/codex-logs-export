@@ -62,9 +62,45 @@ describe("markdown renderer", () => {
     expect(markdown).toContain("- Command:");
     expect(markdown).toContain("```sh");
     expect(markdown).toContain("pwd");
-    expect(markdown).toContain("- Working Directory: /tmp/project");
     expect(markdown).toContain("Output:");
     expect(markdown).toContain("/tmp/project");
+    expect(markdown).not.toContain("- Working Directory: /tmp/project");
+    expect(markdown).not.toContain("- Call ID: call_1");
+    expect(markdown).not.toContain("Command: pwd");
+  });
+
+  it("includes verbose tool metadata behind all=true", () => {
+    const transcript: ParsedTranscript = {
+      metadata: {
+        id: "thread-12345678",
+        model: "gpt-5.4",
+      },
+      entries: [
+        {
+          kind: "tool_call",
+          timestamp: "2026-03-30T16:00:03.000Z",
+          toolName: "exec_command",
+          argumentsText:
+            '{"cmd":"pwd","workdir":"/tmp/project","yield_time_ms":1000}',
+          callId: "call_1",
+        },
+        {
+          kind: "tool_output",
+          timestamp: "2026-03-30T16:00:04.000Z",
+          callId: "call_1",
+          outputText:
+            "Command: pwd\nChunk ID: abc123\nWall time: 0.0000 seconds\nProcess exited with code 0\nOriginal token count: 5\nOutput:\n/tmp/project",
+        },
+      ],
+    };
+
+    const markdown = renderMarkdown(transcript, { all: true });
+
+    expect(markdown).toContain("- Call ID: call_1");
+    expect(markdown).toContain("- Working Directory: /tmp/project");
+    expect(markdown).toContain("- Yield Time (ms): 1000");
+    expect(markdown).toContain("Command: pwd");
+    expect(markdown).toContain("Chunk ID: abc123");
   });
 
   it("sanitizes deterministic filenames", () => {

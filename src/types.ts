@@ -51,4 +51,5 @@ export interface ParsedTranscript {
 export interface ExportOptions {
   includeHiddenPrompts?: boolean;
   messagesOnly?: boolean;
+  all?: boolean;
 }
