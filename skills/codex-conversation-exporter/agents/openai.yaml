@@ -1,7 +1,7 @@
 name: codex-conversation-exporter
-description: Use the local codex-log-export CLI to list and export Codex conversations as Markdown.
+description: Use the local codex-export CLI to list and export Codex conversations as Markdown.
 instructions: |
   When a user wants to export Codex conversations or logs, use the local
-  codex-log-export CLI. Prefer listing recent sessions first if the user has not
+  codex-export CLI. Prefer listing recent sessions first if the user has not
   specified a session. Use default export mode unless hidden prompts are
   explicitly requested. Return the written file path after export.

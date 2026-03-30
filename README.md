@@ -2,6 +2,10 @@
 
 CLI and companion skill for exporting local Codex conversation logs to Markdown.
 
+Primary command: `codex-export`
+
+Compatibility alias: `codex-log-export`
+
 ## What it does
 
 - Lists recent Codex conversations from `~/.codex/state_5.sqlite`
@@ -26,7 +30,7 @@ npm run build
 Run the built CLI:
 
 ```bash
-node ./dist/cli.js list
+codex-export list
 ```
 
 During development:
@@ -40,27 +44,29 @@ node --import tsx ./src/cli.ts list
 List recent sessions:
 
 ```bash
-node ./dist/cli.js list
-node ./dist/cli.js list --limit 10
-node ./dist/cli.js list --since 2026-03-30
+codex-export list
+codex-export list --limit 10
+codex-export list --since 2026-03-30
 ```
 
 Export by thread id:
 
 ```bash
-node ./dist/cli.js export <thread-id>
-node ./dist/cli.js export <thread-id> --out ~/Desktop
-node ./dist/cli.js export <thread-id> --messages-only
-node ./dist/cli.js export <thread-id> --include-hidden-prompts
-node ./dist/cli.js export <thread-id> --stdout
+codex-export export <thread-id>
+codex-export export <thread-id> --out ~/Desktop
+codex-export export <thread-id> --messages-only
+codex-export export <thread-id> --include-hidden-prompts
+codex-export export <thread-id> --stdout
 ```
 
 Export by rollout path:
 
 ```bash
-node ./dist/cli.js export --path ~/.codex/sessions/2026/03/30/rollout-...jsonl
-node ./dist/cli.js export --path ~/.codex/sessions/2026/03/30/rollout-...jsonl --out ~/Desktop
+codex-export export --path ~/.codex/sessions/2026/03/30/rollout-...jsonl
+codex-export export --path ~/.codex/sessions/2026/03/30/rollout-...jsonl --out ~/Desktop
 ```
+
+The legacy alias `codex-log-export` points to the same CLI.
 
 ## Flags
 

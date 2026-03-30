@@ -5,7 +5,8 @@
   "description": "CLI for exporting Codex conversation logs to Markdown",
   "type": "module",
   "bin": {
-    "codex-log-export": "./dist/cli.js"
+    "codex-log-export": "./dist/cli.js",
+    "codex-export": "./dist/cli.js"
   },
   "scripts": {
     "build": "tsup src/cli.ts --format esm --dts --clean",

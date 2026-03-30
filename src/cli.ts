@@ -13,7 +13,7 @@ import { getSessionById, listSessions } from "./session-index.js";
 const program = new Command();
 
 program
-  .name("codex-log-export")
+  .name("codex-export")
   .description("Export Codex conversation logs to Markdown");
 
 program
