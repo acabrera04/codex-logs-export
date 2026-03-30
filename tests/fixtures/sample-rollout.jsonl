@@ -1,0 +1,6 @@
+{"timestamp":"2026-03-30T16:00:00.000Z","type":"session_meta","payload":{"id":"thread-12345678","timestamp":"2026-03-30T15:59:59.000Z","cwd":"/tmp/project","source":"vscode","model_provider":"openai","model":"gpt-5.4","base_instructions":{"text":"Developer prompt text"}}}
+{"timestamp":"2026-03-30T16:00:01.000Z","type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"# AGENTS.md instructions for /tmp/project\n\n<INSTRUCTIONS>\nRules\n</INSTRUCTIONS>\n\n<environment_context>\n  <cwd>/tmp/project</cwd>\n</environment_context>\n\nExport this conversation"}]}}
+{"timestamp":"2026-03-30T16:00:02.000Z","type":"response_item","payload":{"type":"message","role":"assistant","content":[{"type":"output_text","text":"Working on it.\n\n::git-stage{cwd=\"/tmp/project\"}"}]}}
+{"timestamp":"2026-03-30T16:00:03.000Z","type":"response_item","payload":{"type":"function_call","name":"exec_command","arguments":"{\"cmd\":\"pwd\"}","call_id":"call_1"}}
+{"timestamp":"2026-03-30T16:00:04.000Z","type":"response_item","payload":{"type":"function_call_output","call_id":"call_1","output":"Command: pwd\nOutput:\n/tmp/project"}}
+{"timestamp":"2026-03-30T16:00:05.000Z","type":"response_item","payload":{"type":"message","role":"developer","content":[{"type":"input_text","text":"Do not show by default"}]}}
