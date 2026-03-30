@@ -59,7 +59,6 @@ describe("markdown renderer", () => {
     expect(markdown).toContain("#### 👤 User Prompt");
     expect(markdown).toContain("#### 🤖 gpt-5.4 (high)");
     expect(markdown).toContain("#### Tool: exec_command");
-    expect(markdown).toContain("- Command:");
     expect(markdown).toContain("```sh");
     expect(markdown).toContain("pwd");
     expect(markdown).toContain("Output:");

@@ -395,8 +395,6 @@ function renderExecCommandArguments(
     typeof args.login === "boolean" ? String(args.login) : undefined;
 
   if (cmd) {
-    lines.push("- Command:");
-    lines.push("");
     appendFencedBlock(lines, "sh", cmd);
   }
 
