@@ -103,6 +103,36 @@ describe("markdown renderer", () => {
     expect(markdown).toContain("Chunk ID: abc123");
   });
 
+  it("renders update_plan as a readable checklist", () => {
+    const transcript: ParsedTranscript = {
+      metadata: {
+        id: "thread-12345678",
+      },
+      entries: [
+        {
+          kind: "tool_call",
+          toolName: "update_plan",
+          argumentsText: JSON.stringify({
+            explanation: "Implement the feature in a few steps.",
+            plan: [
+              { step: "Inspect repo", status: "completed" },
+              { step: "Implement change", status: "in_progress" },
+            ],
+          }),
+        },
+      ],
+    };
+
+    const markdown = renderMarkdown(transcript);
+
+    expect(markdown).toContain("#### Tool: update_plan");
+    expect(markdown).toContain("- Explanation: Implement the feature in a few steps.");
+    expect(markdown).toContain("- Plan:");
+    expect(markdown).toContain("- [completed] Inspect repo");
+    expect(markdown).toContain("- [in_progress] Implement change");
+    expect(markdown).not.toContain('"explanation"');
+  });
+
   it("sanitizes deterministic filenames", () => {
     const transcript: ParsedTranscript = {
       metadata: {

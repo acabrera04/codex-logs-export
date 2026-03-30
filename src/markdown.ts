@@ -366,6 +366,11 @@ function renderToolCallArguments(
     return;
   }
 
+  if (toolName === "update_plan") {
+    renderUpdatePlanArguments(lines, parsedArgs, options);
+    return;
+  }
+
   appendFencedBlock(lines, "json", JSON.stringify(parsedArgs, null, 2));
 }
 
@@ -418,6 +423,42 @@ function renderExecCommandArguments(
     lines.push("Raw arguments:");
     lines.push("");
     appendFencedBlock(lines, "json", JSON.stringify(remaining, null, 2));
+  }
+}
+
+function renderUpdatePlanArguments(
+  lines: string[],
+  args: Record<string, unknown>,
+  options: ExportOptions = {},
+): void {
+  const explanation =
+    typeof args.explanation === "string" ? args.explanation.trim() : "";
+  const plan = Array.isArray(args.plan) ? args.plan : [];
+
+  if (explanation) {
+    lines.push("- Explanation: " + explanation);
+  }
+
+  if (plan.length > 0) {
+    if (explanation) {
+      lines.push("");
+    }
+    lines.push("- Plan:");
+    for (const item of plan) {
+      if (!item || typeof item !== "object") {
+        continue;
+      }
+      const step = typeof item.step === "string" ? item.step : "Unnamed step";
+      const status = typeof item.status === "string" ? item.status : "unknown";
+      lines.push(`  - [${status}] ${step}`);
+    }
+  }
+
+  if (options.all) {
+    lines.push("");
+    lines.push("Raw arguments:");
+    lines.push("");
+    appendFencedBlock(lines, "json", JSON.stringify(args, null, 2));
   }
 }
 
