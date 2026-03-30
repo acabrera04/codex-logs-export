@@ -27,7 +27,20 @@ npm install
 npm run build
 ```
 
-Run the built CLI:
+Install the global command aliases on your system:
+
+```bash
+npm link
+```
+
+Verify the primary alias is available:
+
+```bash
+which codex-export
+codex-export --help
+```
+
+Run the built CLI after linking:
 
 ```bash
 codex-export list
