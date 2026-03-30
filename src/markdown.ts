@@ -205,9 +205,8 @@ function renderEntry(
     if (entry.timestamp || entry.callId) {
       lines.push("");
     }
-    lines.push("```json");
-    lines.push(entry.argumentsText.trim() || "{}");
-    lines.push("```");
+
+    renderToolCallArguments(lines, entry.toolName, entry.argumentsText);
     lines.push("");
     return;
   }
@@ -261,4 +260,105 @@ function messageHeading(
   }
 
   return titleCase(role);
+}
+
+function renderToolCallArguments(
+  lines: string[],
+  toolName: string,
+  argumentsText: string,
+): void {
+  const parsedArgs = tryParseJsonObject(argumentsText);
+  if (!parsedArgs) {
+    lines.push("```json");
+    lines.push(argumentsText.trim() || "{}");
+    lines.push("```");
+    return;
+  }
+
+  if (toolName === "exec_command") {
+    renderExecCommandArguments(lines, parsedArgs);
+    return;
+  }
+
+  lines.push("```json");
+  lines.push(JSON.stringify(parsedArgs, null, 2));
+  lines.push("```");
+}
+
+function renderExecCommandArguments(
+  lines: string[],
+  args: Record<string, unknown>,
+): void {
+  const cmd = typeof args.cmd === "string" ? args.cmd : undefined;
+  const workdir = typeof args.workdir === "string" ? args.workdir : undefined;
+  const yieldTimeMs =
+    typeof args.yield_time_ms === "number"
+      ? String(args.yield_time_ms)
+      : undefined;
+  const maxOutputTokens =
+    typeof args.max_output_tokens === "number"
+      ? String(args.max_output_tokens)
+      : undefined;
+  const shell = typeof args.shell === "string" ? args.shell : undefined;
+  const tty = typeof args.tty === "boolean" ? String(args.tty) : undefined;
+  const login =
+    typeof args.login === "boolean" ? String(args.login) : undefined;
+
+  if (cmd) {
+    lines.push("- Command:");
+    lines.push("");
+    lines.push("```sh");
+    lines.push(cmd);
+    lines.push("```");
+  }
+
+  pushOptionalBullet(lines, "Working Directory", workdir);
+  pushOptionalBullet(lines, "Yield Time (ms)", yieldTimeMs);
+  pushOptionalBullet(lines, "Max Output Tokens", maxOutputTokens);
+  pushOptionalBullet(lines, "Shell", shell);
+  pushOptionalBullet(lines, "TTY", tty);
+  pushOptionalBullet(lines, "Login Shell", login);
+
+  const remaining = { ...args };
+  delete remaining.cmd;
+  delete remaining.workdir;
+  delete remaining.yield_time_ms;
+  delete remaining.max_output_tokens;
+  delete remaining.shell;
+  delete remaining.tty;
+  delete remaining.login;
+
+  if (Object.keys(remaining).length > 0) {
+    lines.push("");
+    lines.push("Raw arguments:");
+    lines.push("");
+    lines.push("```json");
+    lines.push(JSON.stringify(remaining, null, 2));
+    lines.push("```");
+  }
+}
+
+function tryParseJsonObject(value: string): Record<string, unknown> | null {
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      return parsed as Record<string, unknown>;
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+function pushOptionalBullet(
+  lines: string[],
+  label: string,
+  value: string | undefined,
+): void {
+  if (!value) {
+    return;
+  }
+
+  lines.push(`- ${label}: ${value}`);
 }
